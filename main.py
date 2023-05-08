@@ -25,7 +25,7 @@ print("Tables created.......")
 app = FastAPI()
 
 # SendGrid configuratie
-SENDGRID_API_KEY = "SG.geql3DFkR3eWTEsTHH7D9g.IcnMWg7HWoWYvF6N4UEfKQLKB6cEjMwM432aHfDsQ6s"
+SENDGRID_API_KEY = "api_key"
 SENDGRID_FROM_EMAIL = "your-email@example.com"
 
 # Instantieer SendGrid-client
