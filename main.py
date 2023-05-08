@@ -1,6 +1,9 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 import os
 
@@ -21,6 +24,13 @@ print("Tables created.......")
 
 app = FastAPI()
 
+# SendGrid configuratie
+SENDGRID_API_KEY = "your-sendgrid-api-key"
+SENDGRID_FROM_EMAIL = "your-email@example.com"
+
+# Instantieer SendGrid-client
+sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
+
 
 # Dependency
 def get_db():
@@ -32,6 +42,18 @@ def get_db():
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# Definieer functie om e-mail te versturen
+def send_email(to_email: str, subject: str, content: str):
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=to_email,
+        subject=subject,
+        html_content=content
+    )
+    response = sg.send(message)
+    return response
+
 
 
 @app.post("/token")
@@ -49,6 +71,15 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+
+#mailsserver
+@app.post("/send-email/")
+def send_email_handler(to_email: str, subject: str, content: str):
+    send_email(to_email, subject, content)
+    return {"message": "Email sent"}
+
+
+#USERS
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -88,3 +119,20 @@ def create_item_for_user(
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
+
+
+#FILES
+# Upload a file
+@app.post("/uploadfile/")
+async def create_upload_file(file: UploadFile = File(...)):
+    return {"filename": file.filename}
+
+# Update a file
+@app.put("/updatefile/{file_id}")
+async def update_file(file_id: int, file: UploadFile = File(...)):
+    return {"file_id": file_id, "filename": file.filename}
+
+# Delete a file
+@app.delete("/deletefile/{file_id}")
+async def delete_file(file_id: int):
+    return {"file_id": file_id, "status": "deleted"}
