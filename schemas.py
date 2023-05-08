@@ -33,3 +33,8 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+
+class UserUpdate(BaseModel):
+    email: str = None
+    full_name: str = None
+    password: str = None

@@ -39,3 +39,29 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
     db.commit()
     db.refresh(db_item)
     return db_item
+
+def update_user(db: Session, user: schemas.UserUpdate, db_user: models.User) -> models.User:
+    db_user.email = user.email or db_user.email
+    db_user.full_name = user.full_name or db_user.full_name
+    db_user.disabled = user.disabled or db_user.disabled
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def delete_user(db: Session, user_id: int):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    db.delete(db_user)
+    db.commit()
+    return db_user
+
+
+def send_email(to_email: str, subject: str, content: str):
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=to_email,
+        subject=subject,
+        html_content=content
+    )
+    response = sg.send(message)
+    return response
