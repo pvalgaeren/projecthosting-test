@@ -1,12 +1,14 @@
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 import auth
 import models
 import schemas
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 
 def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
@@ -54,3 +56,15 @@ def delete_user(db: Session, user_id: int):
     db.delete(db_user)
     db.commit()
     return db_user
+
+    
+def send_email(to_email: str, subject: str, content: str):
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=to_email,
+        subject=subject,
+        html_content=content
+    )
+    sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
+    response = sg.send(message)
+    return response

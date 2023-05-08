@@ -25,9 +25,12 @@ print("Tables created.......")
 
 app = FastAPI()
 
+Email = "r0897980@student.thomasmore.be"
+
+
 # SendGrid configuratie
-SENDGRID_API_KEY = "key"
-SENDGRID_FROM_EMAIL = "your-email@example.com"
+SENDGRID_API_KEY = "sendgrid_key"
+SENDGRID_FROM_EMAIL = Email
 
 # Instantieer SendGrid-client
 sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
@@ -42,16 +45,17 @@ def get_db():
         db.close()
 
 def send_email(to_email: str, subject: str, content: str):
-    message = Mail(
-        from_email=SENDGRID_FROM_EMAIL,
-        to_emails=to_email,
-        subject=subject,
-        html_content=content
-    )
-    response = sg.send(message)
-    return response
+    message = Mail(from_email=SENDGRID_FROM_EMAIL, to_emails=to_email, subject=subject, html_content=content)
+    try:
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e)
 
 
+#SCP
 def upload_file_to_remote(local_path, remote_path, hostname, port, username, password):
     # maak een SSH-client
     ssh = paramiko.SSHClient()
@@ -73,7 +77,7 @@ def upload_file_to_remote(local_path, remote_path, hostname, port, username, pas
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-
+#Authenticatie
 @app.post("/token")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = auth.authenticate_user(db, form_data.username, form_data.password)
@@ -89,22 +93,18 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-#SCP
-@app.post("/uploadfile/")
-async def create_upload_file(file: UploadFile = File(...)):
-    # upload het bestand naar de remote server
-    upload_file_to_remote(file.filename, "/path/to/remote/folder/" + file.filename, "hostname", 22, "username", "password")
-
-    # voeg het bestand toe aan de database
-    # db_file = crud.create_file(db=db, file=file)
-
-    return {"filename": file.filename}
-
 
 #mailsserver
 @app.post("/send-email/")
 def send_email_handler(to_email: str, subject: str, content: str):
-    send_email(to_email, subject, content)
+    message = Mail(from_email=SENDGRID_FROM_EMAIL, to_emails=to_email, subject=subject, html_content=content)
+    try:
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e)
     return {"message": "Email sent"}
 
 
@@ -165,7 +165,6 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     crud.delete_user(db=db, user_id=user_id)
     return db_user
-
 
 
 #FILES
