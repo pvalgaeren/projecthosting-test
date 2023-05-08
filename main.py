@@ -25,7 +25,7 @@ print("Tables created.......")
 app = FastAPI()
 
 # SendGrid configuratie
-SENDGRID_API_KEY = "api_key"
+SENDGRID_API_KEY = "SG.geql3DFkR3eWTEsTHH7D9g.IcnMWg7HWoWYvF6N4UEfKQLKB6cEjMwM432aHfDsQ6s"
 SENDGRID_FROM_EMAIL = "your-email@example.com"
 
 # Instantieer SendGrid-client
@@ -39,6 +39,16 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def send_email(to_email: str, subject: str, content: str):
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=to_email,
+        subject=subject,
+        html_content=content
+    )
+    response = sg.send(message)
+    return response
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

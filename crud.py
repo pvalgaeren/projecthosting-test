@@ -54,14 +54,3 @@ def delete_user(db: Session, user_id: int):
     db.delete(db_user)
     db.commit()
     return db_user
-
-
-def send_email(to_email: str, subject: str, content: str):
-    message = Mail(
-        from_email=SENDGRID_FROM_EMAIL,
-        to_emails=to_email,
-        subject=subject,
-        html_content=content
-    )
-    response = sg.send(message)
-    return response
