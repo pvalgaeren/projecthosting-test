@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+import paramiko
 import os
 
 import auth
@@ -51,6 +52,25 @@ def send_email(to_email: str, subject: str, content: str):
     return response
 
 
+def upload_file_to_remote(local_path, remote_path, hostname, port, username, password):
+    # maak een SSH-client
+    ssh = paramiko.SSHClient()
+    # voorkom dat de host key policy wordt gevraagd en accepteer automatisch de sleutel
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    # verbind met de remote server met behulp van de opgegeven credentials
+    ssh.connect(hostname=hostname, port=port, username=username, password=password)
+
+    # maak een SCP-client
+    scp = ssh.open_sftp()
+    # upload het bestand naar de remote server
+    scp.put(local_path, remote_path)
+    # sluit de SCP-client
+    scp.close()
+
+    # sluit de SSH-client
+    ssh.close()
+
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
@@ -67,6 +87,18 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         data={"sub": user.email}
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+#SCP
+@app.post("/uploadfile/")
+async def create_upload_file(file: UploadFile = File(...)):
+    # upload het bestand naar de remote server
+    upload_file_to_remote(file.filename, "/path/to/remote/folder/" + file.filename, "hostname", 22, "username", "password")
+
+    # voeg het bestand toe aan de database
+    # db_file = crud.create_file(db=db, file=file)
+
+    return {"filename": file.filename}
 
 
 #mailsserver
