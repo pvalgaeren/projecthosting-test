@@ -68,3 +68,34 @@ def send_email(to_email: str, subject: str, content: str):
     sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
     response = sg.send(message)
     return response
+
+def get_user_by_email(db: Session, email: str) -> [models.User]:
+    return db.query(models.User).filter(models.User.email == email).first()
+
+
+def get_user_dir(db: Session, email: str) -> str:
+    user = get_user_by_email(db, email)
+    return f'/home/{user.username}/files'  # update this to reflect your directory structure
+
+def upload_file_to_remote(local_path, filename, hostname, port, username, email):
+    # Get the user's directory path
+    db = SessionLocal()
+    remote_path = crud.get_user_dir(db, email)
+    db.close()
+
+    # Prompt user for SSH password
+    password = getpass.getpass("Enter SSH password: ")
+
+    # Create an SSH client and connect to the remote server
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostname=hostname, port=port, username=username, password=password)
+
+    # Create an SFTP client and upload the file
+    sftp = ssh.open_sftp()
+    sftp.put(local_path, f"{remote_path}/{filename}")
+    sftp.close()
+
+    # Close the SSH client
+    ssh.close()
+

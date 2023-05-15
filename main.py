@@ -7,7 +7,7 @@ from sendgrid.helpers.mail import Mail
 
 import paramiko
 import os
-
+from auth import get_current_user
 import auth
 import crud
 import models
@@ -55,26 +55,6 @@ def send_email(to_email: str, subject: str, content: str):
         print(e)
 
 
-#SCP
-def upload_file_to_remote(local_path, remote_path, hostname, port, username, password):
-    # maak een SSH-client
-    ssh = paramiko.SSHClient()
-    # voorkom dat de host key policy wordt gevraagd en accepteer automatisch de sleutel
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    # verbind met de remote server met behulp van de opgegeven credentials
-    ssh.connect(hostname=hostname, port=port, username=username, password=password)
-
-    # maak een SCP-client
-    scp = ssh.open_sftp()
-    # upload het bestand naar de remote server
-    scp.put(local_path, remote_path)
-    # sluit de SCP-client
-    scp.close()
-
-    # sluit de SSH-client
-    ssh.close()
-
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 #Authenticatie
@@ -92,8 +72,6 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-
-
 #mailsserver
 @app.post("/send-email/")
 def send_email_handler(to_email: str, subject: str, content: str):
@@ -106,6 +84,48 @@ def send_email_handler(to_email: str, subject: str, content: str):
     except Exception as e:
         print(e)
     return {"message": "Email sent"}
+
+#SCP 
+@app.post("/upload")
+async def upload_file(file_path: str):
+    # SSH connection details
+    hostname = "your_host"
+    username = "your_username"
+    password = "your_password"
+
+    # Remote directory where the file will be uploaded
+    remote_directory = "/path/to/remote/directory/"
+
+    try:
+        # Create SSH client
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # Connect to the SSH server
+        client.connect(hostname, username=username, password=password)
+
+        # Create an SCP client
+        scp = client.open_sftp()
+
+        # Upload the file
+        local_path = "/path/to/local/file"
+        remote_path = remote_directory + file_path
+        scp.put(local_path, remote_path)
+
+        # Close the SCP and SSH clients
+        scp.close()
+        client.close()
+
+        return {"message": "File uploaded successfully."}
+
+    except paramiko.AuthenticationException:
+        return {"message": "Authentication failed."}
+
+    except paramiko.SSHException as e:
+        return {"message": f"SSH error: {str(e)}"}
+
+    except Exception as e:
+        return {"message": f"Error: {str(e)}"}
 
 
 #USERS

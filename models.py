@@ -11,6 +11,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    files_directory = Column(String, default=f"./user_files/{id}")
 
     items = relationship("Item", back_populates="owner")
 
