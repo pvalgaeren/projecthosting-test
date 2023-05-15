@@ -202,3 +202,15 @@ async def update_file(file_id: int, file: UploadFile = File(...)):
 @app.delete("/deletefile/{file_id}")
 async def delete_file(file_id: int):
     return {"file_id": file_id, "status": "deleted"}
+
+# User toekennen aan files
+@app.post("/projects/{project_id}/users/", response_model=schemas.User)
+def add_user_to_project(project_id: int, user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_project = crud.get_project(db, project_id=project_id)
+    if not db_project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    db_user = crud.get_user_by_email(db, email=user.email)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    crud.add_user_to_project(db=db, project=db_project, user=db_user)
+    return db_user
